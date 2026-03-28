@@ -1,88 +1,190 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="./static/css/styles.css" />
-        <meta
-            http-equiv="Content-Security-Policy"
-            content="default-src * 'unsafe-inline' 'unsafe-eval'"
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Tauri App</title>
-        <script src="./static/js/main.js"></script>
-    </head>
-    <body>
-        <main class="container">
-            <h1>Welcome to TauriMan</h1>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>指标查询系统</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>指标查询系统</h1>
 
-            <div class="row">
-                <a
-                    href="https://tauri.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <img
-                        src="./assets/tauri.svg"
-                        class="logo tauri"
-                        alt="Tauri logo"
-                    />
-                </a>
-                <a
-                    href="https://pakeplus.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <img
-                        src="https://hk.gh-proxy.org/https://github.com/Sjj1024/PakePlus/blob/main/app-icon.png"
-                        class="logo vanilla"
-                        alt="JavaScript logo"
-                    />
-                </a>
+        <div class="search-box">
+            <select id="yearSelect" onchange="changeYear()"></select>
+            <input type="text" id="searchInput" placeholder="输入关键词查询（指标文号、指标说明等）">
+            <button onclick="searchData()">查询</button>
+            <button class="btn-blue" onclick="clearSearch()">显示全部</button>
+            <button class="btn-orange" onclick="exportExcel()">导出Excel</button>
+            <button class="btn-gray admin-btn" onclick="openAdminModal()">管理</button>
+        </div>
+
+        <div class="filter-box">
+            <div class="radio-group" id="balanceGroup">
+                <label class="radio-item" data-value="zero" onclick="toggleFilter('balanceGroup','balance','zero')">
+                    <span class="radio-label">余额为零</span>
+                </label>
+                <label class="radio-item" data-value="nonzero" onclick="toggleFilter('balanceGroup','balance','nonzero')">
+                    <span class="radio-label">余额不为零</span>
+                </label>
             </div>
-            <p>Click to get data</p>
-            <form class="row" id="greet-form">
-                <input id="greet-input" placeholder="Enter a name..." />
-                <button type="submit" id="getdata">GET DATA</button>
-            </form>
-            <div class="functions">
-                <a href="./book.html" target="_self">跳转到book.html</a>
-                <a
-                    href="https://www.baidu.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >跳到百度blank
-                </a>
-                <a
-                    href="https://www.baidu.com"
-                    target="_self"
-                    rel="noopener noreferrer"
-                >
-                    跳到百度self
-                </a>
-                <button onclick="sayHello()">点击我</button>
-                <button onclick="sayHello()">下载文件</button>
-                <button onclick="sayHello()">上传文件</button>
-                <button onclick="sayHello()">访问相机</button>
-                <button onclick="sayHello()">访问麦克风</button>
-                <button onclick="sayHello()">访问相册</button>
-                <button class="btn" onclick="openWechat()">打开微信</button>
-                <button class="btn" onclick="openWechatScan()">
-                    打开扫一扫
-                </button>
-                <button class="btn" onclick="openZhihu()">打开知乎</button>
-                <button onclick="sayHello()">打开抖音</button>
-                <button onclick="sayHello()">用浏览器打开</button>
-                <button>打开知乎</button>
+            <div class="radio-group" id="budgetGroup">
+                <label class="radio-item" data-value="budget" onclick="toggleFilter('budgetGroup','budget','budget')">
+                    <span class="radio-label">年初预算</span>
+                </label>
+                <label class="radio-item" data-value="non_budget" onclick="toggleFilter('budgetGroup','budget','non_budget')">
+                    <span class="radio-label">非年初预算</span>
+                </label>
             </div>
-            <p id="greet-msg"></p>
-            <img src="./static/image/cursor.jpeg" alt="logo" />
-            <video
-                src="https://hk.gh-proxy.org/https://github.com/Sjj1024/PakePlus/blob/main/docs/static/videos/pakeplus.mp4"
-                autoplay
-                controls
-                style="width: 100%; height: 100%"
-            ></video>
-            <audio src="./static/music/yin.mp3" controls></audio>
-        </main>
-    </body>
+            <div class="radio-group" id="yearTypeGroup">
+                <label class="radio-item" data-value="current" onclick="toggleFilter('yearTypeGroup','yearType','current')">
+                    <span class="radio-label">本年指标</span>
+                </label>
+                <label class="radio-item" data-value="carryover" onclick="toggleFilter('yearTypeGroup','yearType','carryover')">
+                    <span class="radio-label">上年结转</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>指标文号</th>
+                        <th>上级指标文号</th>
+                        <th>上层指标文号</th>
+                        <th>下达日期</th>
+                        <th>发文日期</th>
+                        <th>指标说明</th>
+                        <th>原始指标金额</th>
+                        <th>实际可用金额</th>
+                        <th>支付合计</th>
+                        <th>支付进度(%)</th>
+                        <th>指标结余</th>
+                        <th>备注</th>
+                    </tr>
+                    <tr id="summaryRow" class="summary-row">
+                        <td>合计</td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td id="sum_原始指标金额" class="amount"><span class="amount-center">-</span></td>
+                        <td id="sum_实际指标可用金额" class="amount"><span class="amount-center">-</span></td>
+                        <td id="sum_实际支付合计" class="amount"><span class="amount-center">-</span></td>
+                        <td id="sum_实际支付支付进度" class="amount"><span class="amount-center">-</span></td>
+                        <td id="sum_指标结余" class="amount"><span class="amount-center">-</span></td>
+                        <td></td>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="13" class="loading">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 备注编辑模态框 -->
+    <div class="modal" id="remarkModal">
+        <div class="modal-content">
+            <h3>编辑备注</h3>
+            <p id="modalIndicatorInfo" class="modal-hint"></p>
+            <textarea id="remarkInput" placeholder="请输入备注内容"></textarea>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn-save" onclick="saveRemark()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理面板模态框 -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <h3>数据管理</h3>
+
+            <div class="admin-section">
+                <h4>导入数据</h4>
+                <div class="admin-row">
+                    <select id="importYearSelect" class="admin-input"></select>
+                    <input type="file" id="fileInput" accept=".xlsx" style="display: none;" onchange="handleFileSelect(this)">
+                    <button id="btnSelectFile" class="admin-btn btn-purple" onclick="document.getElementById('fileInput').click()">选择文件</button>
+                </div>
+                <div id="importFileName" class="admin-file-name"></div>
+            </div>
+
+            <div class="admin-section">
+                <h4>新增年份</h4>
+                <div class="admin-row">
+                    <input type="number" id="newYearInput" placeholder="输入年份" min="2000" max="2100" class="admin-input">
+                    <button class="admin-btn btn-green" onclick="addNewYear()">新增</button>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h4>删除年份</h4>
+                <div class="admin-row">
+                    <select id="deleteYearSelect" class="admin-input"></select>
+                    <button class="admin-btn btn-red" onclick="deleteYear()">删除</button>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h4>重置数据</h4>
+                <div class="admin-row">
+                    <select id="resetYearSelect" class="admin-input"></select>
+                    <button class="admin-btn btn-orange" onclick="resetYearData()">重置</button>
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeAdminModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 密码验证模态框 -->
+    <div class="modal" id="passwordModal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 350px;">
+            <h3>管理员验证</h3>
+            <p id="passwordModalHint" class="modal-hint">请输入管理员密码</p>
+            <input type="password" id="passwordInput" placeholder="请输入管理员密码" class="password-input">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closePasswordModal()">取消</button>
+                <button class="btn-save" onclick="confirmPassword()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 支付明细弹窗 -->
+    <div class="modal" id="paymentModal">
+        <div class="payment-modal-content">
+            <div class="payment-header">
+                <h3>支付明细</h3>
+                <button class="payment-close-btn" onclick="closePaymentModal()">&times;</button>
+            </div>
+            <div class="payment-summary">
+                <span id="paymentTotal" class="payment-total-badge"></span>
+            </div>
+            <div class="payment-table-container">
+            <table class="payment-table">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>收款人</th>
+                        <th>支付日期</th>
+                        <th>清算日期</th>
+                        <th>金额</th>
+                        <th>摘要事由</th>
+                    </tr>
+                </thead>
+                <tbody id="paymentTableBody">
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/config.js"></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/app.js"></script>
+</body>
 </html>
